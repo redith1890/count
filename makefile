@@ -6,34 +6,20 @@ BUILD_DIR = build
 SOURCES = $(wildcard $(SRC_DIR)/*.c)
 OBJECTS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SOURCES))
 
-CXX = g++
+CC = gcc
+CFLAGS = -Wall -Wextra -std=c99 -O2
 LIBS = -lm
 
-DEBUG ?= 1
-
-ifeq ($(DEBUG), 0)
-    CXXFLAGS = -Wall -Wextra -std=c++17 -O3
-else
-    CXXFLAGS = -Wall -Wextra -std=c++17 -g
-endif
-
-
-all: debug
-
-debug: CXXFLAGS += -g
-debug: $(TARGET)
-
-release: CXXFLAGS += -O3
-release: $(TARGET)
+all: $(TARGET)
 
 $(TARGET): $(OBJECTS)
-	$(CXX) $(CXXFLAGS) $(LIB_DIRS) -o $@ $^ $(LIBS)
+	$(CC) $(CFLAGS) $(LIB_DIRS) -o $@ $^ $(LIBS)
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) $(INCLUDE_DIRS) -c $< -o $@
+	$(CC) $(CFLAGS) $(INCLUDE_DIRS) -c $< -o $@
 
 clean:
 	rm -rf $(BUILD_DIR) $(TARGET)
 
-.PHONY: all debug release clean
+.PHONY: all clean
