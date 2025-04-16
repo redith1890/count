@@ -2,9 +2,42 @@
 #include<stdlib.h>
 #include<dirent.h>
 #include<string.h>
+#include<stdbool.h>
 #include<sys/stat.h>
+#include<ctype.h>
 
-int countLanes(char* dir, char* file_path)
+bool count_empty_lanes = true;
+bool count_comments = true;
+bool in_comment = false;
+
+bool
+is_empty_lane(char* lane)
+{
+    while(*lane)
+    {
+        if (!isspace((unsigned char) *lane)) return false;
+        lane++;
+    }
+    return true;
+}
+
+bool
+is_comment(char* lane)
+{
+    char* str = lane;
+    while(*str)
+    {
+        if(*str == '/' && *(str + 1) == '/')
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+int
+count_lanes(char* dir, char* file_path)
 {
     char path[1024];
     snprintf(path, sizeof(path), "%s/%s", dir, file_path);
@@ -15,16 +48,29 @@ int countLanes(char* dir, char* file_path)
         return 0;
     }
     int lanes = 0;
-    char buffer[1024];
-    while(fgets(buffer, sizeof(buffer), file) != NULL)
+    char buffer[2048];
+
+    while(1)
     {
-        lanes++;
+        char* lane = fgets(buffer, sizeof(buffer), file);
+        if(lane == NULL) break;
+
+        if(!count_empty_lanes)
+        {
+            if(!is_empty_lane(lane)) lanes++;
+        }
+        else if(!count_comments)
+        {
+            if(!is_comment(lane)) lanes++;
+        }
+        else lanes++;
     }
     fclose(file);
     return lanes;
 }
 
-int processDirectory(char* path, char** extensions, int num_extensions, int* total_lanes)
+int
+process_directory(char* path, char** extensions, int num_extensions, int* total_lanes)
 {
     DIR* dir = opendir(path);
     if (dir == NULL) {
@@ -48,7 +94,7 @@ int processDirectory(char* path, char** extensions, int num_extensions, int* tot
         }
 
         if (S_ISDIR(statbuf.st_mode)) {
-            processDirectory(full_path, extensions, num_extensions, total_lanes);
+            process_directory(full_path, extensions, num_extensions, total_lanes);
         } else {
             for (int i = 0; i < num_extensions; i++) {
                 char extension[10] = ".";
@@ -58,7 +104,7 @@ int processDirectory(char* path, char** extensions, int num_extensions, int* tot
                 int ext_len = strlen(extension);
 
                 if (len > ext_len && strcmp(entry->d_name + len - ext_len, extension) == 0) {
-                    int lanes_file = countLanes(path, entry->d_name);
+                    int lanes_file = count_lanes(path, entry->d_name);
                     printf("File: %s - Lanes: %d\n", full_path, lanes_file);
                     *total_lanes += lanes_file;
                     break;
@@ -70,17 +116,44 @@ int processDirectory(char* path, char** extensions, int num_extensions, int* tot
     return 0;
 }
 
-int main(int argc, char* argv[])
+int
+main(int argc, char* argv[])
 {
     if (argc < 3) {
         printf("Usage: %s <directory> <extension1> [extension2] ...\n", argv[0]);
         return 1;
     }
+    
     char* path = argv[1];
     int total_lanes = 0;
-    char** extensions = &argv[2];
-    int num_extensions = argc - 2;
-    processDirectory(path, extensions, num_extensions, &total_lanes);
+    char** extensions;
+    int num_flags = 0;
+
+    // if(strcmp(argv[2], "-e") == 0)
+    // {
+    //     extensions = &argv[3];
+    //     count_empty_lanes = true;
+    // }
+    // else if()
+    // else extensions = &argv[2];
+
+    for(int i = 0; i < argc; i++){
+        if(strcmp(argv[i], "-e") == 0){
+            num_flags++;
+            count_empty_lanes = false;
+        }
+        if(strcmp(argv[i], "-c") == 0){
+            num_flags++;
+            count_comments = false;
+        }
+    }
+
+    extensions = &argv[2 + num_flags];
+    int num_extensions = argc - 2 + num_flags;
+    // if(count_empty_lanes) num_extensions = argc - 3;
+    // else num_extensions = argc - 2;
+
+    process_directory(path, extensions, num_extensions, &total_lanes);
     printf("Total lanes: %d in dir %s and subdirectories\n", total_lanes, path);
     return 0;
 }
