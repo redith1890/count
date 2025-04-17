@@ -102,9 +102,8 @@ process_directory(char* path, char** extensions, int num_extensions, int* total_
             process_directory(full_path, extensions, num_extensions, total_lanes);
         } else {
             for (int i = 0; i < num_extensions; i++) {
-                char extension[10] = ".";
-                strcat(extension, extensions[i]);
-
+                char extension[256];
+                snprintf(extension, sizeof(extension), ".%s", extensions[i]);
                 int len = strlen(entry->d_name);
                 int ext_len = strlen(extension);
 
@@ -146,7 +145,7 @@ main(int argc, char* argv[])
     }
 
     extensions = &argv[2 + num_flags];
-    int num_extensions = argc - 2 + num_flags;
+    int num_extensions = argc - 2 - num_flags;
 
     process_directory(path, extensions, num_extensions, &total_lanes);
     printf("Total lanes: %d in dir %s and subdirectories\n", total_lanes, path);
