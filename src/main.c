@@ -2,15 +2,17 @@
 #include<stdlib.h>
 #include<dirent.h>
 #include<string.h>
-#include<stdbool.h>
+// #include<stdbool.h>
 #include<sys/stat.h>
 #include<ctype.h>
 
+typedef enum { false, true } bool;
+
 bool count_empty_lanes = true;
 bool count_comments = true;
-bool in_comment = false;
+// bool in_comment = false;
 
-bool
+static inline bool
 is_empty_lane(char* lane)
 {
     while(*lane)
@@ -21,7 +23,7 @@ is_empty_lane(char* lane)
     return true;
 }
 
-bool
+static inline bool
 is_comment(char* lane)
 {
     char* str = lane;
@@ -37,7 +39,7 @@ is_comment(char* lane)
 }
 
 
-int
+static inline int
 count_lanes(char* dir, char* file_path)
 {
     char path[1024];
@@ -74,7 +76,7 @@ count_lanes(char* dir, char* file_path)
     return lanes;
 }
 
-int
+static inline int
 process_directory(char* path, char** extensions, int num_extensions, int* total_lanes)
 {
     DIR* dir = opendir(path);
